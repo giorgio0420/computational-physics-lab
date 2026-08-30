@@ -1,0 +1,4 @@
+# Only needed for the animations in scripts/.
+# The C programs and `make check` need nothing from this file.
+numpy
+matplotlib

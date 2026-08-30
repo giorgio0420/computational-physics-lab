@@ -315,7 +315,17 @@ report/figures/    figures extracted from the PDF, named by page
 
 ## Requirements
 
-A C99 compiler and `make`. gnuplot for the plots. Nothing else.
+The physics needs nothing but a C99 compiler and `make` — no libraries beyond libc and
+libm. `make` and `make check` work with that alone.
+
+The animations in `scripts/` are Python:
+
+```bash
+pip install -r requirements.txt
+```
+
+which is `numpy` and `matplotlib`. gnuplot reproduces the static figures in `figures/`,
+but the committed ones are already there.
 
 ## License
 

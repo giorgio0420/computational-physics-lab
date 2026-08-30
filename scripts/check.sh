@@ -28,6 +28,9 @@ report "transient duration of the system" "$got" "234.11"
 got=$("$BIN/periodo" | awk -F': ' '/period averaged/{printf "%.5f", $2}')
 report "period averaged over x,y,z" "$got" "5.84817"
 
+got=$("$BIN/corr" | awk -F': ' '/self-correlation/{printf "%.6f", $2}')
+report "corr: x with itself at lag 0" "$got" "1.000000"
+
 echo
 echo "Random walks (diffusion law <x^2> = t)"
 

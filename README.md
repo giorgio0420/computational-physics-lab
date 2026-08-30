@@ -44,7 +44,7 @@ make          # build everything into bin/
 make check    # reproduce the report's headline numbers
 ```
 
-`make check` verifies seven results against the report and against the physics and exits non-zero on
+`make check` verifies eight results against the report and against the physics and exits non-zero on
 any mismatch:
 
 ```
@@ -52,6 +52,7 @@ Rossler system (a=0.1, b=0.1, c=1, x0=y0=z0=0)
   PASS  x,y,z at t=100 (dt=0.01)           -0.7866364173 0.3313694622 0.0901477239
   PASS  transient duration of the system   234.11
   PASS  period averaged over x,y,z         5.84817
+  PASS  corr: x with itself at lag 0       1.000000
 
 Random walks (diffusion law <x^2> = t)
   PASS  1D <x^2>/t at t=500, n=5000        within 6%
@@ -78,6 +79,7 @@ periodic orbit to chaos as `c` grows. The exercise walks that transition.
 | `integratore.c` | RK2 integrator. All parameters from the command line. |
 | `periodo.c` | Period of each variable, from the spacing of successive maxima. |
 | `duratatransiente.c` | Transient duration: when neighbouring maxima stop differing by more than 0.0005. |
+| `corr.c` | Normalised cross-correlations between `x`, `y` and `z` against a shifting lag. The lag of strongest correlation is the phase difference. |
 | `ex1.c` | Bifurcation diagram. RK4, with linear interpolation to locate the `y(t) = 0` crossings. |
 | `ex2.c` | Arc length of the trajectory over the transient, as a function of `c`. RK4. |
 
@@ -100,6 +102,25 @@ The convergence study is the part worth reading: at `dt = 0.1` RK2 gives
 the rest of the report is still ~28% off the converged one. The squared distance from the
 orbit centre behaves much better — `0.5136` at `dt = 10⁻⁵` versus `0.8219` at `dt = 0.01` —
 because it is a property of the orbit rather than of the phase along it.
+
+`corr.c` measures the phase differences between the three variables, by correlating each
+pair against a shifting lag and taking the lag of strongest correlation:
+
+| pair | lag | correlation |
+|---|---|---|
+| x–y | 1.54 time units | 0.989 |
+| x–z | 0.97 | 0.912 |
+| y–z | 5.28 | 0.918 |
+
+The x–y lag is close to a quarter of the 5.85 period, which is what the equations predict:
+`y' = x + a·y` makes `y` trail `x` by roughly 90 degrees.
+
+One caveat on those numbers. The correlations are normalised the textbook way, dividing by
+the two standard deviations, so a signal against itself at zero lag gives exactly 1 and
+every pair is on the same scale — `make check` asserts that. The 2021 version divided by
+hand-tuned constants instead, which gave curves of the right shape but an arbitrary
+height, so the y-axis here does not match the y-axis of the figures in report section 1.3.
+The shapes and the peak positions do.
 
 ![Bifurcation diagram](report/figures/p10_1.png)
 
@@ -275,6 +296,17 @@ report describes and what the repository builds is never a mystery.
   reading `l[-1][j]` whenever `i == 0`. The other three branches make the intent
   unambiguous, so it now tests and assigns `l[i][j-1]`.
 
+**Two programs rewritten rather than patched**
+
+- `corr.c` reported a period of `0.01`, which is just `dt`. Its maximum test was
+  `x < x_next && x > x_prev` — that is "rising", not "at a peak", so it fired on
+  consecutive steps. It also printed from inside its accumulation loop, emitting a running
+  partial sum per term instead of one row per lag, and indexed up to `10588` into a
+  `double[10000]`. Rewritten around the standard normalised cross-correlation.
+- `gas.c` had five independent faults in its movement logic, listed in the commit that
+  replaced it, and never simulated anything: its main loop was
+  `do {...} while (t > Tmax)` with `t` starting at zero, so it ran a single step.
+
 **Stray debug output**
 
 - `ale.c` printed each raw random number to stdout, interleaving it with the data columns.
@@ -285,27 +317,11 @@ unchanged.
 
 ---
 
-## Left as written — `src/wip/`
-
-One program is published unrepaired, because fixing it would mean rewriting it rather than
-correcting it. It is excluded from the default build.
-
-**`wip/corr.c`** — cross-correlations between `x`, `y`, `z` at varying offset `k`
-(report §1.3). Its own period detection returns `0.01`, which is just `dt`, so the
-normalisation `somxy/mperiodi` is meaningless. The `printf` sits inside the accumulation
-loop, so it emits a running partial sum for every term instead of one row per `k`. And
-`x1[k+i2]` indexes up to `10588` into a `double[10000]`. The correlation figures in the
-report were produced before these regressions; `periodo.c` is the reliable period
-measurement.
-
----
-
 ## Layout
 
 ```
 src/rossler/       RK2 and RK4 programs for the Rössler system
 src/stochastic/    random walks and percolation
-src/wip/           left unrepaired, excluded from the build (see above)
 scripts/check.sh       reproduces the report's headline numbers
 scripts/animate_gas.py builds figures/gas.gif from one lattice gas run
 scripts/animate_per.py builds figures/percolation.gif from one per.c run

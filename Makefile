@@ -3,7 +3,7 @@ CFLAGS  ?= -O2 -Wall
 LDLIBS  := -lm
 BIN     := bin
 
-ROSSLER    := integratore periodo duratatransiente ex1 ex2
+ROSSLER    := integratore periodo duratatransiente corr ex1 ex2
 STOCHASTIC := rw rw2d ale per gas
 
 ROSSLER_BIN    := $(addprefix $(BIN)/,$(ROSSLER))

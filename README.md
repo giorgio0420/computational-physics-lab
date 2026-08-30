@@ -1,6 +1,6 @@
 # Computational physics laboratory
 
-[![check](https://github.com/giorgio0420/comp-phys-lab/actions/workflows/check.yml/badge.svg)](https://github.com/giorgio0420/comp-phys-lab/actions/workflows/check.yml)
+[![check](https://github.com/giorgio0420/computational-physics-lab/actions/workflows/check.yml/badge.svg)](https://github.com/giorgio0420/computational-physics-lab/actions/workflows/check.yml)
 
 ![Rossler transient, phase portraits, bifurcation diagram, 3D attractor, random walks, and the 2D probability surface](gif.gif)
 

@@ -196,7 +196,7 @@ each other, at high density they jam.
 
 ![One lattice gas run, empty pockets coloured by cluster](figures/gas.gif)
 
-*One run, animated by `scripts/animate_gas.py`. Empty sites are coloured by which
+*One run, animated by `scripts/animate.py gas`. Empty sites are coloured by which
 connected pocket of empty space they belong to, wrapping across the periodic boundary;
 particles are dark.*
 
@@ -214,7 +214,7 @@ stop dead.
 
 ![Three densities compared](figures/gas_densities.gif)
 
-*`scripts/animate_gas.py --compare` puts three densities side by side. Same seed, same
+*`scripts/animate.py gas --compare` puts three densities side by side. Same seed, same
 number of sweeps; only the density changes.*
 
 ### Percolation, animated
@@ -225,7 +225,7 @@ themselves out of noise.
 
 ```bash
 ./bin/per 24 0.45 2024
-python scripts/animate_per.py --L 24 --p 0.45
+python scripts/animate.py per --L 24 --p 0.45
 ```
 
 ![Percolation clusters emerging from the relaxation](figures/percolation.gif)
@@ -323,8 +323,7 @@ unchanged.
 src/rossler/       RK2 and RK4 programs for the Rössler system
 src/stochastic/    random walks and percolation
 scripts/check.sh       reproduces the report's headline numbers
-scripts/animate_gas.py builds figures/gas.gif from one lattice gas run
-scripts/animate_per.py builds figures/percolation.gif from one per.c run
+scripts/animate.py     builds the GIFs in figures/ (the only Python here)
 figures/           gnuplot output for the stochastic models
 report/REPORT.md   the Rössler report, in English
 report/relazione_IT.pdf   the original Italian report
@@ -336,7 +335,8 @@ report/figures/    figures extracted from the PDF, named by page
 The physics needs nothing but a C99 compiler and `make` — no libraries beyond libc and
 libm. `make` and `make check` work with that alone.
 
-The animations in `scripts/` are Python:
+The single Python script, `scripts/animate.py`, builds the GIFs and is the only
+reason `requirements.txt` exists:
 
 ```bash
 pip install -r requirements.txt

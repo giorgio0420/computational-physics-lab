@@ -31,15 +31,15 @@ FIGURES := figures/gas.gif figures/percolation.gif
 
 figures: $(FIGURES)
 
-figures/gas.gif: $(BIN)/gas scripts/animate_gas.py
-	python scripts/animate_gas.py
+figures/gas.gif: $(BIN)/gas scripts/animate.py
+	python scripts/animate.py gas
 
-figures/percolation.gif: $(BIN)/per scripts/animate_per.py
-	python scripts/animate_per.py
+figures/percolation.gif: $(BIN)/per scripts/animate.py
+	python scripts/animate.py per
 
 # The three-density comparison is a one-off for the README, not part of `figures`.
-figures/gas_densities.gif: $(BIN)/gas scripts/animate_gas.py
-	python scripts/animate_gas.py --compare
+figures/gas_densities.gif: $(BIN)/gas scripts/animate.py
+	python scripts/animate.py gas --compare
 
 # Reproduce the three headline numbers from the report.
 check: all

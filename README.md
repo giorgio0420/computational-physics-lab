@@ -18,7 +18,7 @@ make          # build everything into bin/
 make check    # reproduce the report's headline numbers
 ```
 
-`make check` verifies five results against the values in the report and exits non-zero on
+`make check` verifies seven results against the report and against the physics and exits non-zero on
 any mismatch:
 
 ```
@@ -30,6 +30,10 @@ Rossler system (a=0.1, b=0.1, c=1, x0=y0=z0=0)
 Random walks (diffusion law <x^2> = t)
   PASS  1D <x^2>/t at t=500, n=5000        within 6%
   PASS  2D <r^2>/t at t=1e5, n=400         within 15%
+
+Lattice gas (32x32, hard-core exclusion)
+  PASS  particle count over 20000 moves    conserved
+  PASS  acceptance at density 0.6          tracks 1-density
 ```
 
 ---
@@ -101,6 +105,7 @@ compiled in, since each was written for one specific figure.
 | `rw2d.c` | `n_walks t_max [seed]` | 2-D walk on a square lattice. Prints `t, x, y, P(x), P(y), P(x,y)` at `t = 10⁵`. |
 | `ale.c` | `n_walks t_max seed` | Biased 1-D walk with traps at `x = ±25, ±51, ±52, ±100`. |
 | `per.c` | `L p [seed]` | Percolation on an `L × L` torus, `p` = fraction of broken links. Relaxation labelling until no cluster label changes. |
+| `gas.c` | `[L] [density] [steps] [seed]` | Lattice gas on an `L × L` torus with hard-core exclusion. Prints the mean squared displacement per sweep. |
 
 Each program writes one blank-line-separated block per trajectory, which is the format
 gnuplot's `index` wants.
@@ -130,14 +135,44 @@ caught for long stretches at the traps it meets. Reproduce that figure with
 Seeds giving small `p` produce an upward drift that passes straight through the traps
 instead, which is the same code doing the same thing.
 
+### The lattice gas
+
+`gas.c` fills an `L × L` torus to a given density and then repeatedly picks a particle at
+random and tries to move it to a neighbouring site. The move succeeds only if that site is
+empty — no two particles ever share a site. That single rule is the whole model, and it is
+enough to produce the behaviour worth measuring: at low density particles barely notice
+each other, at high density they jam.
+
+```bash
+./bin/gas 32 0.6 20000 4242
+```
+
+Because a move needs an empty target, the fraction of accepted moves tracks the fraction of
+empty sites:
+
+| density | accepted | MSD after the run |
+|---|---|---|
+| 0.05 | 94.6% | 3479.3 |
+| 0.30 | 68.3% | 333.4 |
+| 0.60 | 39.5% | 86.8 |
+| 0.90 | 11.1% | 13.5 |
+| 0.98 | 2.3% | 2.6 |
+
+Displacement is accumulated on unwrapped coordinates: when a particle crosses the periodic
+boundary its unwrapped position keeps counting, otherwise a wrap would register as a large
+jump backwards and the mean squared displacement would be meaningless.
+
 ---
 
-## Fixes applied before publishing
+## Porting notes
 
-The programs are as originally written, apart from defects that stopped them producing
-correct output on a current toolchain. Each is listed here rather than quietly folded in.
+This was written in 2021 against Linux and glibc, on a machine where `unsigned long` is
+64 bits. Running it on a current 64-bit Windows toolchain surfaced the differences below.
+Most are portability issues that were invisible on the original hardware — the kind that
+only appear once code moves — and they are recorded here so the diff between what the
+report describes and what the repository builds is never a mystery.
 
-**Portability**
+**A 32-bit integer where a 64-bit one was assumed**
 
 - `unsigned long int seme` → `unsigned long long`. `unsigned long` is 32-bit on Windows
   (LLP64), so `16807 * seme` and `22695477 * seme` overflowed and the linear congruential
@@ -180,10 +215,10 @@ unchanged.
 
 ---
 
-## Not working — `src/wip/`
+## Left as written — `src/wip/`
 
-Two programs are published as they were, because repairing them would mean rewriting them
-rather than fixing them. They are excluded from the default build.
+One program is published unrepaired, because fixing it would mean rewriting it rather than
+correcting it. It is excluded from the default build.
 
 **`wip/corr.c`** — cross-correlations between `x`, `y`, `z` at varying offset `k`
 (report §1.3). Its own period detection returns `0.01`, which is just `dt`, so the
@@ -193,13 +228,6 @@ loop, so it emits a running partial sum for every term instead of one row per `k
 report were produced before these regressions; `periodo.c` is the reliable period
 measurement.
 
-**`wip/gas.c`** — lattice gas on an `L × L` torus. Several independent defects: the
-main loop is `do { ... } while (t > Tmax)` with `t` starting at 0, so it executes exactly
-one step; `rand() % L + 1` gives indices in `[1, L]` against an array indexed `[0, L-1]`;
-the site-picking loop searches for an *empty* cell and then tries to move a particle from
-it; and the four direction branches overlap, so `r < 0.25` sets `direzione` to 2 rather
-than 1.
-
 ---
 
 ## Layout
@@ -207,7 +235,7 @@ than 1.
 ```
 src/rossler/       RK2 and RK4 programs for the Rössler system
 src/stochastic/    random walks and percolation
-src/wip/           known-broken, excluded from the build (see above)
+src/wip/           left unrepaired, excluded from the build (see above)
 scripts/check.sh   reproduces the report's headline numbers
 figures/           gnuplot output for the stochastic models
 report/REPORT.md   the Rössler report, in English

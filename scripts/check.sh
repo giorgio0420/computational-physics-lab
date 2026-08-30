@@ -44,6 +44,22 @@ report "2D <r^2>/t at t=1e5, n=400" \
        "within 15%"
 
 echo
+echo "Lattice gas (32x32, hard-core exclusion)"
+
+out=$("$BIN/gas" 32 0.6 20000 4242)
+
+# a move only relocates a particle, so the count can never change
+got=$(echo "$out" | awk '/^particles:/{print ($2 == $6) ? "conserved" : "LOST"}')
+report "particle count over 20000 moves" "$got" "conserved"
+
+# a move is accepted when the target site is empty, so the acceptance rate
+# has to track the fraction of empty sites, 1 - density
+got=$(echo "$out" | awk '/^accepted moves:/{gsub(/[(%)]/,"",$NF); print $NF}')
+report "acceptance at density 0.6" \
+       "$(awk -v r="$got" 'BEGIN{print (r>34 && r<46) ? "tracks 1-density" : r"%"}')" \
+       "tracks 1-density"
+
+echo
 if [ "$fail" -eq 0 ]; then
     echo "all checks passed"
 else

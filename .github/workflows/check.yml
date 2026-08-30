@@ -1,0 +1,25 @@
+name: check
+
+# Run on every push and every pull request, and allow a manual run from the
+# Actions tab. If the numbers ever stop matching the report, this goes red.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: build and reproduce the report
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compiler version
+        run: cc --version
+
+      - name: Build every program
+        run: make
+
+      - name: Reproduce the report's numbers
+        run: make check

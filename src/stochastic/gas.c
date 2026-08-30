@@ -7,8 +7,11 @@
  * diffuse freely, at high density they block each other and the whole system
  * slows down.
  *
- * usage: gas [L] [density] [n_steps] [seed]
- *        defaults: L=4  density=0.7  n_steps=100  seed=12345
+ * usage: gas [L] [density] [n_steps] [seed] [snapshot_every]
+ *        defaults: L=4  density=0.7  n_steps=100  seed=12345  snapshot_every=0
+ *
+ * snapshot_every > 0 dumps the whole lattice that many sweeps apart, in a form
+ * scripts/animate_gas.py can parse. 0 turns it off.
  *
  * Prints the initial lattice, then one line per sweep with the mean squared
  * displacement, then the final lattice. A sweep is N attempted moves, N being
@@ -34,18 +37,21 @@ static double uniform(void)
 
 int main(int argc, char *argv[argc])
 {
-    int L = 4, Tmax = 100;
+    int L = 4, Tmax = 100, snap_every = 0;
     double p = 0.7;
     seme = 12345ULL;
 
-    if (argc > 5) {
-        fprintf(stderr, "usage: %s [L] [density] [n_steps] [seed]\n", argv[0]);
+    if (argc > 6) {
+        fprintf(stderr,
+                "usage: %s [L] [density] [n_steps] [seed] [snapshot_every]\n",
+                argv[0]);
         exit(EXIT_FAILURE);
     }
     if (argc > 1) L    = atoi(argv[1]);
     if (argc > 2) p    = atof(argv[2]);
     if (argc > 3) Tmax = atoi(argv[3]);
     if (argc > 4) seme = strtoull(argv[4], NULL, 10);
+    if (argc > 5) snap_every = atoi(argv[5]);
 
     if (L < 2 || p < 0.0 || p > 1.0 || Tmax < 0) {
         fprintf(stderr, "need L >= 2, 0 <= density <= 1, n_steps >= 0\n");
@@ -85,12 +91,16 @@ int main(int argc, char *argv[argc])
         }
     }
 
+    /* width the widest label needs, so columns never run together on a big
+     * lattice - with a fixed %4d, four-digit labels merge into one token */
+    int w = snprintf(NULL, 0, "%d", n);
+
     printf("# lattice %dx%d, density %.3f, %d particles, %d steps, seed %llu\n",
            L, L, p, n, Tmax, seme);
     printf("# 0 = empty, otherwise the particle label\n\n");
     printf("initial lattice\n");
     for (int i = 0; i < L; i++) {
-        for (int j = 0; j < L; j++) printf("%4d", l[i][j]);
+        for (int j = 0; j < L; j++) printf("%*d ", w, l[i][j]);
         printf("\n");
     }
 
@@ -146,13 +156,25 @@ int main(int argc, char *argv[argc])
                 double ddy = uy[k] - y0[k];
                 msd += ddx * ddx + ddy * ddy;
             }
-            printf("%8d %10d %9.4f\n", t / sweep, accepted, msd / n);
+            int sw = t / sweep;
+            printf("%8d %10d %9.4f\n", sw, accepted, msd / n);
+
+            /* whole lattice, for scripts/animate_gas.py */
+            if (snap_every > 0 && sw % snap_every == 0) {
+                printf("# snapshot %d\n", sw);
+                for (int i = 0; i < L; i++) {
+                    for (int j = 0; j < L; j++)
+                        printf("%d ", l[i][j] ? 1 : 0);
+                    printf("\n");
+                }
+                printf("# end\n");
+            }
         }
     }
 
     printf("\nfinal lattice\n");
     for (int i = 0; i < L; i++) {
-        for (int j = 0; j < L; j++) printf("%4d", l[i][j]);
+        for (int j = 0; j < L; j++) printf("%*d ", w, l[i][j]);
         printf("\n");
     }
 
